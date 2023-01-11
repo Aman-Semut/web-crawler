@@ -9,9 +9,9 @@ import (
 	"os/signal"
 	"strconv"
 
+	"hello/graph"
+
 	"github.com/steelx/extractlinks"
-	"github.com/steelx/webscrapper/graph"
-	//"graph/graph.go"
 	// "strings"
 	// "golang.org/x/net/html"
 	// "io"
@@ -209,6 +209,11 @@ func toFixedUrl(href, base string) string {
 func safeExit(code int) string {
 
 	defer os.Exit(code)
+
+	fmt.Println("Printing graph before exiting:")
+	graphMap.Print()
+
+	fmt.Println("Closing connections...")
 
 	switch code {
 	case 0:
