@@ -23,8 +23,6 @@ func Connect() *sql.DB {
 		panic(err.Error())
 	}
 
-	defer db.Close()
-
 	err = db.Ping()
 	if err != nil {
 		fmt.Println("Error connecting to database: ", err.Error())
