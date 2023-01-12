@@ -55,7 +55,7 @@ func init() {
 func main() {
 	// package cobra for command line arguments
 	args := os.Args[1:]
-
+	
 	//If there are no arguments , just make  a safe exit
 	if len(args) < 1 {
 		fmt.Println("URL is missing")
