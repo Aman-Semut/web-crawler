@@ -24,3 +24,8 @@ func AddDataToUser() {
 	}
 	return nil
 }
+
+func main(){
+	AddDataToUser();
+	return ;
+}
