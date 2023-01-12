@@ -1,4 +1,4 @@
-package main
+package dbconfig
 
 import (
 	"database/sql"

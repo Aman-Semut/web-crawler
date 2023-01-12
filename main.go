@@ -14,6 +14,7 @@ import (
 	"strconv"
 
 	"hello/graph"
+	// "hello/dbController"
 
 	"github.com/steelx/extractlinks"
 	// "strings"
@@ -110,7 +111,6 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 	// fmt.Println("Post body:", msg.Urls)
 
 	// package cobra for command line arguments-TODO
-	// args := os.Args[1:]
 
 	//If there are no arguments , just make  a safe exit
 	if len(body.Url) < 1 {
@@ -164,6 +164,11 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 					return
 				}
 				fmt.Println("Responding to postman with ", res)
+				
+
+				//  add data 
+				// dbController.AddData(graphMap.Adjacency)
+
 
 				return
 				// safeExit(0)
@@ -289,7 +294,7 @@ func safeExit(code int) string {
 
 	switch code {
 	case 0:
-
+		// insert data 
 		//Do something
 		break
 	case 1:

@@ -1,9 +1,9 @@
-package controller
+package dbController
 
 import (
 	"encoding/json"
 	"fmt"
-	"hello/dbConfig"
+	"hello/dbconfig"
 	//"log"
 	//"net/http"
 )
@@ -11,10 +11,22 @@ import (
 func insertNodes() {
 	json.Marshal(23)
 	fmt.Println("Inside DB Controller")
-	db := dbConfig.Connect()
+	db := dbconfig.Connect()
 
 	defer db.Close()
 
 	//http.DefaultServeMux
+
+}
+
+
+// add data 
+// get data 
+
+func AddData() {
+	db := dbconfig.Connect()
+
+	defer db.Close()
+
 
 }
