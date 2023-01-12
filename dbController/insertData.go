@@ -1,7 +1,7 @@
 package dbController
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"hello/dbconfig"
 )
@@ -22,5 +22,6 @@ func AddDataToUser() {
 		fmt.Println("Error executing statement: ", err.Error())
 		panic(err.Error())
 	}
-	return nil
+	
+	fmt.Println(res)
 }
