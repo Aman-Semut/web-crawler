@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -29,6 +30,12 @@ type ReqData struct {
 	Url string `json:"url"`
 }
 
+type CustomError struct {
+	err  error
+	msg  string
+	code int
+}
+
 // Declaring variables for use in crawler algorithm
 var (
 	//This is a channel of string having a maximum buffer size of 100, it stores the urls obtained from recursive calls and helps to add them to the url graph
@@ -51,7 +58,6 @@ var (
 	// batch mode storing of size 100
 	// find a optimal value for batch size
 
-	maxdepth int = 2
 )
 
 // Initialisation of http client and the go routine for handling interrupt signals
@@ -66,6 +72,7 @@ func handleReqs() {
 	r := http.NewServeMux()
 
 	r.HandleFunc("/post", postCrawlRequest)
+	r.HandleFunc("/get", getCrawlRequest)
 
 	err := http.ListenAndServe(":9000", r)
 	log.Fatal(err)
@@ -73,6 +80,12 @@ func handleReqs() {
 
 func main() {
 	handleReqs()
+}
+
+func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(http.StatusOK)
+	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	io.WriteString(rw, "This HTTP response has both headers before this text and trailers at the end.\n")
 }
 
 func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
@@ -103,7 +116,12 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 	if len(body.Url) < 1 {
 		fmt.Println("URL is missing")
 		// os.Exit(1)
-		safeExit(1)
+		//safeExit(1)
+		var myError CustomError
+		myError.msg = "URL is missing"
+		myError.code = 400
+		throwHttpError(rw, myError)
+		return
 	}
 	// check with len args < 1 - Done
 
@@ -116,6 +134,7 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 	}()
 
 	// concurrency handling -TODO
+	var maxdepth int = 50
 	for href := range urlQueue {
 		if !hasCrawled[href] {
 			// this needs to be a go routine and set upper limit on the number of go routines-TODO
@@ -124,19 +143,32 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 			maxdepth--
 			if maxdepth == 0 {
 				resp, err := json.Marshal(graphMap.Adjacency)
-				//fmt.Println(string(resp))
+				//fmt.Println("Response : ", string(resp))
 				if err != nil {
-					fmt.Println("Graphmap couldn't be responded", err)
-					http.Error(rw, err.Error(), 500)
+					// fmt.Println("Graphmap couldn't be responded", err)
+					// http.Error(rw, err.Error(), 500)
+					error := CustomError{err, err.Error(), 500}
+					throwHttpError(rw, error)
 					return
 				}
 
-				rw.Header().Set("content-type", "application/json")
-				//json.NewEncoder(rw).Encode(graphMap.Adjacency)
-				rw.Write(resp) //Not working duw to socket hangup issue
+				rw.WriteHeader(http.StatusOK)
+				rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+				res, err := rw.Write(resp)
 
+				if err != nil {
+					// fmt.Println("Graphmap couldn't be responded duw to rw:", err)
+					// http.Error(rw, err.Error(), 500)
+					error := CustomError{err, err.Error(), 500}
+					throwHttpError(rw, error)
+					return
+				}
+				fmt.Println("Responding to postman with ", res)
+
+				return
+				// safeExit(0)
 			}
-			safeExit(0)
+
 		}
 	}
 }
@@ -290,4 +322,11 @@ func safeExit(code int) string {
 	fmt.Println("Safe Exit with code " + strconv.Itoa(code))
 
 	return "Safe Exit with code " + strconv.Itoa(code)
+}
+
+func throwHttpError(rw http.ResponseWriter, customError CustomError) {
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(customError.code)
+	json.NewEncoder(rw).Encode(map[string]string{"error": customError.msg})
+	return
 }
