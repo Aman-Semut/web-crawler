@@ -14,7 +14,6 @@ import (
 	"github.com/steelx/extractlinks"
 	// "strings"
 	// "golang.org/x/net/html"
-	// "io"
 )
 
 // add comments
