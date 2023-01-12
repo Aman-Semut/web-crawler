@@ -70,7 +70,7 @@ func init() {
 func handleReqs() {
 	r := http.NewServeMux()
 
-	r.HandleFunc("/post", postCrawlRequest)
+	r.HandleFunc("/post/", postCrawlRequest)
 	r.HandleFunc("/get", getCrawlRequest)
 
 	err := http.ListenAndServe(":9000", r)
@@ -78,9 +78,7 @@ func handleReqs() {
 }
 
 func main() {
-
-	
-
+	fmt.Println("Hello, playground")
 	handleReqs()
 }
 
@@ -278,25 +276,6 @@ func toFixedUrl(href, base string) string {
 	return uri.String()
 }
 
-// func buildText(htmlBody io.Reader) string {
-// 	n, err := html.Parse(htmlBody)
-// 	if err != nil {
-// 		return ""
-// 	}
-
-// 	fmt.Println(n.Data)
-// 	// os.Exit(0)
-// 	return ""
-// 	// if n.Type == html.TextNode {
-// 	// 	return n.Data
-// 	// }
-
-// 	// var text string
-// 	// for c := n.FirstChild; c != nil; c = c.NextSibling {
-// 	// 	text += buildText(c)
-// 	// }
-// 	// return strings.Join(strings.Fields(text), " ")
-// }
 
 // Write Code for safeExit store in DB, close connections etc - TODO
 func safeExit(code int) string {
