@@ -80,7 +80,8 @@ func handleReqs() {
 
 func main() {
 	fmt.Println("Hello, playground")
-	handleReqs()
+	// handleReqs()
+	dbController.AddDataToUser();
 }
 
 func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
