@@ -2,7 +2,10 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,6 +23,11 @@ import (
 // add comments
 // write more clean code add more white spaces
 // delv debugger
+
+type ReqData struct {
+	Id  int64  `json:"id"`
+	Url string `json:"url"`
+}
 
 // Declaring variables for use in crawler algorithm
 var (
@@ -42,6 +50,8 @@ var (
 	// try to use noSQL DB
 	// batch mode storing of size 100
 	// find a optimal value for batch size
+
+	maxdepth int = 2
 )
 
 // Initialisation of http client and the go routine for handling interrupt signals
@@ -52,12 +62,45 @@ func init() {
 	go SignalHandler(make(chan os.Signal, 1))
 }
 
+func handleReqs() {
+	r := http.NewServeMux()
+
+	r.HandleFunc("/post", postCrawlRequest)
+
+	err := http.ListenAndServe(":9000", r)
+	log.Fatal(err)
+}
+
 func main() {
-	// package cobra for command line arguments
-	args := os.Args[1:]
+	handleReqs()
+}
+
+func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
+
+	b, err := ioutil.ReadAll(req.Body)
+
+	defer req.Body.Close()
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+
+	// Unmarshal
+	var body ReqData
+	err = json.Unmarshal(b, &body)
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+
+		return
+	}
+
+	// fmt.Println("Post body:", msg.Urls)
+
+	// package cobra for command line arguments-TODO
+	// args := os.Args[1:]
 
 	//If there are no arguments , just make  a safe exit
-	if len(args) < 1 {
+	if len(body.Url) < 1 {
 		fmt.Println("URL is missing")
 		// os.Exit(1)
 		safeExit(1)
@@ -65,7 +108,7 @@ func main() {
 	// check with len args < 1 - Done
 
 	//get the base url from the slice of urls i.e args
-	baseURL := args[0] // rename the baseURL - Done
+	baseURL := body.Url // rename the baseURL - Done
 
 	//Append the baseURL to the urlQueue
 	go func() {
@@ -76,10 +119,26 @@ func main() {
 	for href := range urlQueue {
 		if !hasCrawled[href] {
 			// this needs to be a go routine and set upper limit on the number of go routines-TODO
+
 			crawlLink(href)
+			maxdepth--
+			if maxdepth == 0 {
+				resp, err := json.Marshal(graphMap.Adjacency)
+				//fmt.Println(string(resp))
+				if err != nil {
+					fmt.Println("Graphmap couldn't be responded", err)
+					http.Error(rw, err.Error(), 500)
+					return
+				}
+
+				rw.Header().Set("content-type", "application/json")
+				//json.NewEncoder(rw).Encode(graphMap.Adjacency)
+				rw.Write(resp) //Not working duw to socket hangup issue
+
+			}
+			safeExit(0)
 		}
 	}
-
 }
 
 // This function is called when some signal is received from the os
@@ -153,14 +212,14 @@ func crawlLink(baseHref string) {
 		// try using this -> urlQueue <- url
 
 		go func(url string) {
-			urlQueue <- url
+			urlQueue <- fixedUrl
 		}(fixedUrl)
 	}
 }
 
 func checkErr(err error) {
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Some error occured : ", err)
 		// safe exit -> continue
 		// os.Exit(0)
 		safeExit(0)
@@ -210,8 +269,8 @@ func safeExit(code int) string {
 
 	defer os.Exit(code)
 
-	fmt.Println("Printing graph before exiting:")
-	graphMap.Print()
+	//fmt.Println("Printing graph before exiting:")
+	//graphMap.Print()
 
 	fmt.Println("Closing connections...")
 
