@@ -12,8 +12,8 @@ import (
 	"os/signal"
 	"strconv"
 
-	"hello/graph"
 	"hello/dbController"
+	"hello/graph"
 
 	"github.com/steelx/extractlinks"
 	// "strings"
@@ -83,13 +83,19 @@ func main() {
 	handleReqs()
 }
 
+func enableCors(rw http.ResponseWriter) {
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+}
+
 func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
 
 	// fmt.Println("GET params were:", r.URL.Query())
+	enableCors(rw)
 	url := r.URL.Query().Get("url")
 	fmt.Println("Url received:", url)
 
 	getGraph := dbController.GetData(url)
+	//getGraph := graphMap.Adjacency
 
 	resp, err := json.Marshal(getGraph)
 	//fmt.Println("Response : ", string(resp))
@@ -116,7 +122,7 @@ func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
 }
 
 func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
-
+	enableCors(rw)
 	b, err := io.ReadAll(req.Body)
 
 	defer req.Body.Close()
@@ -187,9 +193,7 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 				}
 				fmt.Println("Responding to postman with ", res)
 
-				
-
-				//  add data 
+				//  add data
 				dbController.AddData(graphMap.Adjacency, baseURL)
 
 				return
