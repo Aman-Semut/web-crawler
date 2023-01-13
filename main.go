@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -14,7 +13,6 @@ import (
 	"strconv"
 
 	"hello/graph"
-	"hello/dbController"
 
 	"github.com/steelx/extractlinks"
 	// "strings"
@@ -85,14 +83,37 @@ func main() {
 }
 
 func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
+
+	// fmt.Println("GET params were:", r.URL.Query())
+	url := r.URL.Query().Get("url")
+	fmt.Println("Url received:", url)
+	resp, err := json.Marshal(graphMap.Adjacency)
+	//fmt.Println("Response : ", string(resp))
+	if err != nil {
+		// fmt.Println("Graphmap couldn't be responded", err)
+		// http.Error(rw, err.Error(), 500)
+		error := CustomError{err, err.Error(), 500}
+		throwHttpError(rw, error)
+		return
+	}
+
 	rw.WriteHeader(http.StatusOK)
-	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	io.WriteString(rw, "This HTTP response has both headers before this text and trailers at the end.\n")
+	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res, err := rw.Write(resp)
+
+	if err != nil {
+		// fmt.Println("Graphmap couldn't be responded duw to rw:", err)
+		// http.Error(rw, err.Error(), 500)
+		error := CustomError{err, err.Error(), 500}
+		throwHttpError(rw, error)
+		return
+	}
+	fmt.Println("Responding to postman with ", res)
 }
 
 func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 
-	b, err := ioutil.ReadAll(req.Body)
+	b, err := io.ReadAll(req.Body)
 
 	defer req.Body.Close()
 	if err != nil {
@@ -108,10 +129,6 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-
-	// fmt.Println("Post body:", msg.Urls)
-
-	// package cobra for command line arguments-TODO
 
 	//If there are no arguments , just make  a safe exit
 	if len(body.Url) < 1 {
@@ -140,7 +157,7 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 		if !hasCrawled[href] {
 			// this needs to be a go routine and set upper limit on the number of go routines-TODO
 
-			crawlLink(href)
+			crawlLink(href, rw)
 			maxdepth--
 			if maxdepth == 0 {
 				resp, err := json.Marshal(graphMap.Adjacency)
@@ -165,11 +182,12 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 					return
 				}
 				fmt.Println("Responding to postman with ", res)
+
 				
 
 				//  add data 
 				dbController.AddData(graphMap.Adjacency, baseURL)
-				
+
 				return
 				// safeExit(0)
 			}
@@ -187,6 +205,7 @@ func SignalHandler(c chan os.Signal) {
 	// for s := <-c; ; s = <-c {
 
 	//Based on the type of interrupt signal received , do something
+
 	switch s {
 	case os.Interrupt:
 		fmt.Println("^C received")
@@ -207,7 +226,7 @@ func SignalHandler(c chan os.Signal) {
 }
 
 // This function crawls from a given baseURL and compltes the network map after crwaling
-func crawlLink(baseHref string) {
+func crawlLink(baseHref string, rw http.ResponseWriter) {
 	//Adds the current node or baseHref to the network map
 	graphMap.AddVertex(baseHref) // check this for exit
 	hasCrawled[baseHref] = true
@@ -217,14 +236,14 @@ func crawlLink(baseHref string) {
 
 	//Gets the response from the netClient,checks for errors and processes the responses
 	resp, err := netClient.Get(baseHref)
-	checkErr(err)
+	checkErr(err, rw)
 
 	//close each network connection after crawling the network from a strating baseHref
 	defer resp.Body.Close()
 
 	//Extract the links from the reposnse body which contains HTML
 	links, err := extractlinks.All(resp.Body)
-	checkErr(err)
+	checkErr(err, rw)
 
 	// get all texts and use the information - TODO
 	// texts := buildText(resp.Body)
@@ -254,12 +273,16 @@ func crawlLink(baseHref string) {
 	}
 }
 
-func checkErr(err error) {
+func checkErr(err error, rw http.ResponseWriter) {
 	if err != nil {
 		fmt.Println("Some error occured : ", err)
 		// safe exit -> continue
 		// os.Exit(0)
-		safeExit(0)
+		myError := CustomError{err, err.Error(), 400}
+		throwHttpError(rw, myError)
+		//safeExit(0)
+		return
+
 	}
 }
 
@@ -281,7 +304,6 @@ func toFixedUrl(href, base string) string {
 	return uri.String()
 }
 
-
 // Write Code for safeExit store in DB, close connections etc - TODO
 func safeExit(code int) string {
 
@@ -294,7 +316,7 @@ func safeExit(code int) string {
 
 	switch code {
 	case 0:
-		// insert data 
+		// insert data
 		//Do something
 		break
 	case 1:
@@ -314,5 +336,5 @@ func throwHttpError(rw http.ResponseWriter, customError CustomError) {
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(customError.code)
 	json.NewEncoder(rw).Encode(map[string]string{"error": customError.msg})
-	return
+
 }
