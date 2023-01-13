@@ -80,6 +80,7 @@ func handleReqs() {
 
 func main() {
 	fmt.Println("Hello, playground")
+	// dbController.AddDataToUser()
 	handleReqs()
 }
 
@@ -134,7 +135,7 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 	}()
 
 	// concurrency handling -TODO
-	var maxdepth int = 50
+	var maxdepth int = 2
 	for href := range urlQueue {
 		if !hasCrawled[href] {
 			// this needs to be a go routine and set upper limit on the number of go routines-TODO
@@ -167,9 +168,8 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 				
 
 				//  add data 
-				dbController.AddData(graphMap.Adjacency)
-
-
+				dbController.AddData(graphMap.Adjacency, baseURL)
+				
 				return
 				// safeExit(0)
 			}
