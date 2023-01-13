@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"hello/graph"
+	"hello/dbController"
 
 	"github.com/steelx/extractlinks"
 	// "strings"
@@ -87,7 +88,10 @@ func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
 	// fmt.Println("GET params were:", r.URL.Query())
 	url := r.URL.Query().Get("url")
 	fmt.Println("Url received:", url)
-	resp, err := json.Marshal(graphMap.Adjacency)
+
+	getGraph := dbController.GetData(url)
+
+	resp, err := json.Marshal(getGraph)
 	//fmt.Println("Response : ", string(resp))
 	if err != nil {
 		// fmt.Println("Graphmap couldn't be responded", err)
