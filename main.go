@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"hello/graph"
+	"hello/dbController"
 
 	"github.com/steelx/extractlinks"
 	// "strings"
@@ -78,6 +79,7 @@ func handleReqs() {
 
 func main() {
 	fmt.Println("Hello, playground")
+	// dbController.AddDataToUser()
 	handleReqs()
 }
 
@@ -86,7 +88,10 @@ func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
 	// fmt.Println("GET params were:", r.URL.Query())
 	url := r.URL.Query().Get("url")
 	fmt.Println("Url received:", url)
-	resp, err := json.Marshal(graphMap.Adjacency)
+
+	getGraph := dbController.GetData(url)
+
+	resp, err := json.Marshal(getGraph)
 	//fmt.Println("Response : ", string(resp))
 	if err != nil {
 		// fmt.Println("Graphmap couldn't be responded", err)
@@ -151,7 +156,7 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 	}()
 
 	// concurrency handling -TODO
-	var maxdepth int = 50
+	var maxdepth int = 2
 	for href := range urlQueue {
 		if !hasCrawled[href] {
 			// this needs to be a go routine and set upper limit on the number of go routines-TODO
@@ -182,8 +187,10 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 				}
 				fmt.Println("Responding to postman with ", res)
 
-				//  add data
-				//dbController.AddData(graphMap.Adjacency)
+				
+
+				//  add data 
+				dbController.AddData(graphMap.Adjacency, baseURL)
 
 				return
 				// safeExit(0)
