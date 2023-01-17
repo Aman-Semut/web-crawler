@@ -9,8 +9,7 @@ import (
 	//"net/http"
 )
 
-
-func AddData(graph map[string][]string, baseURL string) {
+func AddData(graph map[string][]string, baseURL string) bool {
 	db := dbconfig.Connect()
 
 	fmt.Println("Inside DB Controller")
@@ -20,6 +19,8 @@ func AddData(graph map[string][]string, baseURL string) {
 	// columns := ("id", "base_url", "current_url", "parent_url")
 
 	values := make([]interface{}, 0, length*3)
+
+	done := true
 
 	for key, value := range graph {
 		// fmt.Println("Key: ", key, "Value: ", value)
@@ -35,21 +36,19 @@ func AddData(graph map[string][]string, baseURL string) {
 		}
 	}
 
-	
 	query_string := `INSERT INTO stored_links (base_url, current_url, parent_url) VALUES ($1, $2, $3)`
-
-	
 
 	for i := 0; i < len(values); i += 3 {
 		fmt.Println("Values: ", values[i], values[i+1], values[i+2])
-		_, e := db.Exec(query_string,values[i], values[i+1], values[i+2])
+		_, e := db.Exec(query_string, values[i], values[i+1], values[i+2])
 		if e != nil {
 			fmt.Println("Error executing statement: ", e.Error())
+			done = false
 		}
 	}
 
 	defer db.Close()
-
+	return done
 }
 
 func GetData(baseURL string) map[string][]string {
