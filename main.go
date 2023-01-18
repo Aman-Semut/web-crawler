@@ -12,7 +12,7 @@ import (
 	"os/signal"
 	"strconv"
 
-	"hello/dbController"
+	//"hello/dbController"
 	"hello/graph"
 
 	"github.com/steelx/extractlinks"
@@ -94,8 +94,8 @@ func getCrawlRequest(rw http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
 	fmt.Println("Url received:", url)
 
-	getGraph := dbController.GetData(url)
-	//getGraph := graphMap.Adjacency
+	//getGraph := dbController.GetData(url)
+	getGraph := graphMap.Adjacency
 
 	resp, err := json.Marshal(getGraph)
 	//fmt.Println("Response : ", string(resp))
@@ -194,7 +194,7 @@ func postCrawlRequest(rw http.ResponseWriter, req *http.Request) {
 				fmt.Println("Responding to postman with ", res)
 
 				//  add data
-				dbController.AddData(graphMap.Adjacency, baseURL)
+				//dbController.AddData(graphMap.Adjacency, baseURL)
 
 				return
 				// safeExit(0)
@@ -244,6 +244,13 @@ func crawlLink(baseHref string, rw http.ResponseWriter) {
 
 	//Gets the response from the netClient,checks for errors and processes the responses
 	resp, err := netClient.Get(baseHref)
+	if err != nil {
+		//fmt.Println("Crawling error : ", err)
+		//http.Error(rw, err.Error(), 500)
+		error := CustomError{err, err.Error(), 500}
+		throwHttpError(rw, error)
+		return
+	}
 	checkErr(err, rw)
 
 	//close each network connection after crawling the network from a strating baseHref

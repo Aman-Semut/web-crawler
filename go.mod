@@ -3,6 +3,7 @@ module hello
 go 1.16
 
 require (
+	github.com/jarcoal/httpmock v1.2.0 // indirect
 	github.com/lib/pq v1.10.7
 	github.com/steelx/extractlinks v0.0.2 // direct
 
